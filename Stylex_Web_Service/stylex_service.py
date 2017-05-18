@@ -1,6 +1,9 @@
+import logging
 import werkzeug
 from flask import Flask
 from flask_restful import Resource, reqparse, Api
+
+logging.basicConfig(level=logging.DEBUG)
 
 app = Flask(__name__)
 api = Api(app)
@@ -14,7 +17,8 @@ class StylexService(Resource):
         parse.add_argument('image', type=werkzeug.FileStorage, location='files')
 
         args = parse.parse_args()
-        print(args)
+        logging.debug(args)
+
         image = args['image']
         image.save('myfile.jpg')
 
