@@ -4,8 +4,19 @@ import numpy as np
 import PIL.Image
 
 
-def load(filename):
+def load(filename, max_size=None):
     image = PIL.Image.open(filename)
+
+    if max_size is not None:
+        factor = max_size / np.max(image.size)
+
+        # Scale the image's height and width.
+        size = np.array(image.size) * factor
+
+        size = size.astype(int)
+
+        image = image.resize(size, PIL.Image.LANCZOS)
+
     return np.float32(image)
 
 
