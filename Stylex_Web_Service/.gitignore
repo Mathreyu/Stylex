@@ -42,3 +42,6 @@ pip-delete-this-directory.txt
 #PyCharm
 .idea/
 *.log
+
+#VGG16
+vgg16-tfmodel/vgg16.tfmodel
