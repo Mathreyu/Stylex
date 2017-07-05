@@ -156,8 +156,8 @@ def style_transfer(content_image, style_image,
 
 
 if __name__ == "__main__":
-    style_image = load('images/style8.jpg', max_size=300)
-    content_image = load('images/willy_wonka_new.jpg')
+    style_image = load('images/giger.jpg', max_size=300)
+    content_image = load('images/hulk.jpg')
 
     style_layer_ids = [1, 2, 3, 4]
     content_layer_ids = [4]

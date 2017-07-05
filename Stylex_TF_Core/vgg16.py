@@ -20,6 +20,12 @@ import os
 # Note that this might change in the future and will need to be updated.
 data_url = "https://s3.amazonaws.com/cadl/models/vgg16.tfmodel"
 
+# Directory to store the downloaded data.
+data_dir = "vgg16/"
+
+# File containing the TensorFlow graph definition. (Downloaded)
+path_graph_def = "vgg16.tfmodel"
+
 class VGG16:
     """
     The VGG16 model is a Deep Neural Network which has already been
