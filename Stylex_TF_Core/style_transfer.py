@@ -8,22 +8,21 @@ from image_utils import load, plot_results, plot_single
 
 vgg16.data_dir = 'vgg16-tfmodel/'
 
+
 # average of the squre of the errors.
 # between output values for both images at a given layer
 # The smaller the means squared error, the closer you are to finding the line of best fit.
 # square the difference between both output feature map/activation map
 # and average all those values by adding all then dividing by n
 # https://www.tensorflow.org/api_docs/python/tf/reduce_mean
+
+# Es el promedio de los errores al cuadrado.
+# Esta funcion basicamente mide la diferencia etre dos valores. Entre mas pequeño, mas parecidos.
 def mean_squared_error(a, b):
     return tf.reduce_mean(tf.square(a - b))
 
 
-# step 3 - content image is 3d numpy array, indices for the layers
-# we want to use for content loss
-# you should expirment what looks good for different layers
-# there is not one best layer, we haven't found a way to minimize
-# loss for beauty. how to quantify?
-def create_content_loss(session, model, content_image, layer_ids):
+def define_content_loss_function(session, model, content_image, layer_ids):
     """
     Create the loss-function for the content-image.
 
@@ -38,28 +37,40 @@ def create_content_loss(session, model, content_image, layer_ids):
     # placeholders as keys and the representative feed
     # tensors as values.
     # Create a feed-dict with the content-image.
+
+    # Creamos un diccionario que contiene como valor la imagen y en la
+    # llave va un tag pre definido para que VGG16 lo pueda leer y sepa que es la imagen
     feed_dict = model.create_feed_dict(image=content_image)
 
     # Get references to the tensors for the given layers.
     # collection of filters
+
+    # Obtenemos las capas que vamos a usar
     layers = model.get_layer_tensors(layer_ids)
 
     # Calculate the output values of those layers when
     # feeding the content-image to the model.
+
+    # Aqui a cada capa se le pasa la imagen como parametro
+    # y los resultados se almacenan en el tensor values
+    # NOTA: Aqui feed_dict lo que hace es mapear tensores ya cargados con sus inputs
     values = session.run(layers, feed_dict=feed_dict)
 
     # Set the model's graph as the default so we can add
     # computational nodes to it. It is not always clear
     # when this is necessary in TensorFlow, but if you
     # want to re-use this code then it may be necessary.
+
+    # IMPORTANTE: Seteamos el grafo como default pues queremos que se vaya construyendo
+    # siempre sobre el mismo, se pueden definir otras sesiones si asi se desea.
     with model.graph.as_default():
-        # Initialize an empty list of loss-functions.
-        # because we are calculating losses per layer
         layer_losses = []
 
         # For each layer and its corresponding values
         # for the content-image.
-        for value, layer in zip(values, layers):
+
+        # Ahora para cada capa vamos
+        for layer, value in zip(layers, values):
             # These are the values that are calculated
             # for this layer in the model when inputting
             # the content-image. Wrap it to ensure it
@@ -256,10 +267,10 @@ def style_transfer(content_image, style_image,
     print()
 
     # Create the loss-function for the content-layers and -image.
-    loss_content = create_content_loss(session=session,
-                                       model=model,
-                                       content_image=content_image,
-                                       layer_ids=content_layer_ids)
+    loss_content = define_content_loss_function(session=session,
+                                                model=model,
+                                                content_image=content_image,
+                                                layer_ids=content_layer_ids)
 
     # Create the loss-function for the style-layers and -image.
     loss_style = create_style_loss(session=session,
@@ -303,9 +314,9 @@ def style_transfer(content_image, style_image,
     # adjustment values, we can use relative weights for the
     # loss-functions that are easier to select, as they are
     # independent of the exact choice of style- and content-layers.
-    loss_combined = weight_content * adj_content * loss_content + \
-                    weight_style * adj_style * loss_style + \
-                    weight_denoise * adj_denoise * loss_denoise
+    loss_combined = weight_content * update_adj_content * loss_content + \
+                    weight_style * update_adj_style * loss_style + \
+                    weight_denoise * update_adj_denoise * loss_denoise
 
     # Use TensorFlow to get the mathematical function for the
     # gradient of the combined loss-function with regard to
@@ -313,8 +324,7 @@ def style_transfer(content_image, style_image,
     gradient = tf.gradients(loss_combined, model.input)
 
     # List of tensors that we will run in each optimization iteration.
-    run_list = [gradient, update_adj_content, update_adj_style, \
-                update_adj_denoise]
+    run_list = [gradient, update_adj_content, update_adj_style, update_adj_denoise]
 
     # The mixed-image is initialized with random noise.
     # It is the same size as the content-image.
@@ -333,6 +343,7 @@ def style_transfer(content_image, style_image,
         # Reduce the dimensionality of the gradient.
         # Remove single-dimensional entries from the shape of an array.
         grad = np.squeeze(grad)
+        np.shape()
 
         # Scale the step-size according to the gradient-values.
         # Ratio of weights:updates
@@ -341,6 +352,10 @@ def style_transfer(content_image, style_image,
 
         # Update the image by following the gradient.
         # gradient descent
+
+        # Aqui el gradiente es una matriz de valores de las mismas dimensiones que la imagen
+        # al multiplicar ambas matrices lo que estamos haciendo es actualizar el valor de la imagen
+
         mixed_image -= grad * step_size_scaled
 
         # Ensure the image has valid pixel-values between 0 and 255.
@@ -378,23 +393,22 @@ def style_transfer(content_image, style_image,
 
 
 if __name__ == "__main__":
-    content_filename = 'images/willy_wonka_new.jpg'
-    content_image = load(content_filename)
-    style_filename = 'images/style8.jpg'
-    style_image = load(style_filename, max_size=300)
-    content_layer_ids = [4]
+    style_image = load('images/style8.jpg', max_size=300)
+    content_image = load('images/willy_wonka_new.jpg')
 
     # The VGG16-model has 13 convolutional layers.
     # This selects all those layers as the style-layers.
     # This is somewhat slow to optimize.
-    #style_layer_ids = list(range(13))
-    style_layer_ids = [1,2,3,4]
-
+    # style_layer_ids = list(range(13))
     # You can also select a sub-set of the layers, e.g. like this:
     # style_layer_ids = [1, 2, 3, 4]
+    style_layer_ids = [1, 2, 3, 4]
+    content_layer_ids = [4]
 
-    img = style_transfer(content_image=content_image, style_image=style_image, content_layer_ids=content_layer_ids,
-                         style_layer_ids=style_layer_ids, weight_content=1.5, weight_style=10.0, weight_denoise=0.3,
-                         num_iterations=60, step_size=10.0)
+    mixed_image = style_transfer(content_image=content_image, style_image=style_image,
+                                 content_layer_ids=content_layer_ids,
+                                 style_layer_ids=style_layer_ids, weight_content=1.5, weight_style=10.0,
+                                 weight_denoise=0.3,
+                                 num_iterations=60, step_size=10.0)
 
-    plot_results(content_image=content_image, style_image=style_image, mixed_image=img)
+    plot_results(content_image=content_image, style_image=style_image, mixed_image=mixed_image)
