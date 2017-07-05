@@ -130,7 +130,6 @@ def style_transfer(content_image, style_image,
             = session.run(run_list, feed_dict=feed_dict)
 
         grad = np.squeeze(grad)
-        np.shape()
 
         step_size_scaled = step_size / (np.std(grad) + 1e-8)
 
