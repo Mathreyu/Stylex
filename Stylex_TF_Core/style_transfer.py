@@ -156,8 +156,8 @@ def style_transfer(content_image, style_image,
 
 
 if __name__ == "__main__":
-    style_image = load('images/giger.jpg', max_size=300)
-    content_image = load('images/hulk.jpg')
+    style_image = load('images/style4.jpg')
+    content_image = load('images/willy_wonka_new.jpg')
 
     style_layer_ids = [1, 2, 3, 4]
     content_layer_ids = [4]
@@ -166,6 +166,6 @@ if __name__ == "__main__":
                                  content_layer_ids=content_layer_ids,
                                  style_layer_ids=style_layer_ids, weight_content=1.5, weight_style=10.0,
                                  weight_denoise=0.3,
-                                 num_iterations=60, step_size=10.0)
+                                 num_iterations=20, step_size=10.0)
 
     plot_results(content_image=content_image, style_image=style_image, mixed_image=mixed_image)
